@@ -1,0 +1,33 @@
+#!/bin/sh
+TMPDIR=`mktemp -d`
+
+# TODO: separate logic for gcc and g++ (separete env for LIBRARY_PATH?)
+echo '#include <stdio.h>' | gcc -v -x c -E - 2> $TMPDIR/gcc > /dev/null
+
+while read line
+do
+  if [ -n "$START" ]; then
+    if [ "$line" = "End of search list." ]; then
+      START=
+    elif [ -n "$ZIGWRAPPER_CPATH" ]; then
+      ZIGWRAPPER_CPATH="$ZIGWRAPPER_CPATH:$line"
+    else
+      ZIGWRAPPER_CPATH="$line"
+    fi
+  elif [ "$line" = "#include <...> search starts here:" ]; then
+    START=yes
+  else
+    case "$line" in
+      LIBRARY_PATH*)
+        libpath="$line"
+        ;;
+    esac
+  fi
+done < $TMPDIR/gcc
+rm -rf $TMPDIR
+export CPPFLAGS="-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0"
+export $libpath ZIGWRAPPER_CPATH="$ZIGWRAPPER_CPATH"
+if [ -z "$ZIGWRAPPER_TARGET" ]; then
+  export ZIGWRAPPER_TARGET=x86_64-linux-gnu
+fi
+exec "$@"

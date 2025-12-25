@@ -1,0 +1,73 @@
+#!/bin/sh
+
+BASE_CMD=$1
+shift
+CMD="zig $BASE_CMD -target $ZIGWRAPPER_TARGET.$ZIGWRAPPER_LIBC_VERSION $ZIGWRAPPER_FIRST"
+#if [ -z "$ZIGWRAPPER_LAST" ]; then
+#  ZIGWRAPPER_LAST="--allow-shlib-undefined -Wl,--undefined-version -Wno-missing-field-initializers"
+#fi
+# add LIBRARY_PATH forcefully https://trac.macports.org/ticket/54553
+IFS=:
+for dir in $LIBRARY_PATH; do
+    [ -n "$dir" ] && CMD="$CMD -L$dir"
+done
+for dir in $ZIGWRAPPER_CPATH; do
+    [ -n "$dir" ] && CMD="$CMD -isystem $dir"
+done
+unset IFS
+
+GEN_PCH=""
+HEADER_FILE=""
+C_ARG=""
+CMD_OTHER=""
+HAS_SHARED=""
+# a baseline
+# echo "[zig wrapper]$CMD" "$@"
+# exec $CMD "$@"
+for arg in "$@"; do
+    case "$arg" in
+        -c)
+            C_ARG="-c"
+            ;;
+        -shared)
+            HAS_SHARED="yes"
+            ;;
+    esac
+done
+
+for arg in "$@"; do
+    case "$arg" in
+        -c)
+            # not used in PCH mode
+            ;;
+        *.h|*.hpp)
+            if [ -z "$C_ARG"  ]; then
+                CMD_OTHER="$CMD_OTHER $arg"
+            else # generate PCH
+                GEN_PCH="yes"
+                HEADER_FILE="$arg"
+            fi
+            ;;
+        -fPIE|-pie)
+            # fix clang error when both -fPIE/-pie and -shared are specified
+            if [ -z "$HAS_SHARED"  ]; then
+                CMD_OTHER="$CMD_OTHER $arg"
+            fi
+            ;;
+        *)
+            CMD_OTHER="$CMD_OTHER $arg"
+            ;;
+    esac
+done
+
+# We need -lunwind in Rust. cf. https://zenn.dev/coord_e/articles/portable-binary-in-rust
+#CMD="$CMD -lunwind"
+
+if [ "$GEN_PCH" = "yes" ]; then
+    #we need to specify output filename
+    OUTFILE="${HEADER_FILE}.gch"
+    echo "[zig_wrapper commandline]" $CMD $CMD_OTHER -x c++-header "$HEADER_FILE" -o "$OUTFILE" $ZIGWRAPPER_LAST>&2
+    exec $CMD $CMD_OTHER -x c++-header "$HEADER_FILE" -o "$OUTFILE" $ZIGWRAPPER_LAST
+fi
+echo "[zig_wrapper commandline]" $CMD $C_ARG $CMD_OTHER $ZIGWRAPPER_LAST>&2
+exec $CMD $C_ARG $CMD_OTHER $ZIGWRAPPER_LAST

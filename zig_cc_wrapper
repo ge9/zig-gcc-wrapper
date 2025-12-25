@@ -1,0 +1,2 @@
+#!/bin/sh
+$(dirname $0)/zig_wrapper_base cc -target $ZIGWRAPPER_TARGET.$ZIGWRAPPER_LIBC_VERSION "$@"

@@ -1,0 +1,5 @@
+#!/bin/sh
+ZIGWRAPPER_LIBC_VERSION=$1
+shift
+export CPPFLAGS="-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0"
+ZIGWRAPPER_LIBC_VERSION=$ZIGWRAPPER_LIBC_VERSION CC=$(dirname $0)/zig_cc_wrapper CXX=$(dirname $0)/zig_c++_wrapper $(dirname $0)/zig_set_env "$@"

@@ -1,0 +1,4 @@
+#!/bin/sh
+ZIGWRAPPER_LIBC_VERSION=$1
+shift
+ZIGWRAPPER_LIBC_VERSION=$ZIGWRAPPER_LIBC_VERSION $(dirname $0)/zig_set_env make CC=$(dirname $0)/zig_cc_wrapper CXX=$(dirname $0)/zig_c++_wrapper "$@"
