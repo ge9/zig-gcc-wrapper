@@ -1,0 +1,2 @@
+#!/bin/sh
+$(dirname $0)/zig_wrapper_base c++ -target x86_64-linux-gnu.$ZIGWRAPPER_LIBC_VERSION "$@"
