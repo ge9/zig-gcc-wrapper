@@ -60,6 +60,10 @@ for arg in "$@"; do
     esac
 done
 
+for l in $ZIGWRAPPER_SHIM_LIB
+do
+CMD_OTHER="$CMD_OTHER $(dirname $0)/shim/$l.o"
+done
 # We need -lunwind in Rust. cf. https://zenn.dev/coord_e/articles/portable-binary-in-rust
 #CMD="$CMD -lunwind"
 
